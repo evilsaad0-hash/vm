@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: evilsaad-jupyter
+    runtime: docker
+    plan: free
+    healthCheckPath: /api
+    envVars:
+      - key: JUPYTER_TOKEN
+        generateValue: true
+      - key: PORT
+        value: "10000"
