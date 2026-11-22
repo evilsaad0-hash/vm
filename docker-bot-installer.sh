@@ -57,6 +57,23 @@ install_bot() {
         fail "Please run this installer as root: sudo bash install.sh"
     fi
 
+    step "Checking and cleaning temporary package caches"
+    # Safe cache cleanup only; this does not remove user project files.
+    apt-get clean || true
+    rm -rf /var/lib/apt/lists/*
+    if command -v pip3 >/dev/null 2>&1; then
+        pip3 cache purge >/dev/null 2>&1 || true
+    fi
+    rm -rf /root/.cache/pip
+
+    AVAILABLE_KB=$(df -Pk . | awk 'NR==2 {print $4}')
+    if [[ -z "${AVAILABLE_KB:-}" || "$AVAILABLE_KB" -lt 307200 ]]; then
+        echo -e "${RED}[✗] Not enough free disk space. At least 300 MB is required.${RESET}"
+        df -h .
+        echo -e "${YELLOW}Free space in your Railway service/container, or increase its storage, then run this installer again.${RESET}"
+        fail "Disk space check failed"
+    fi
+
     step "Updating package lists"
     apt-get update || fail "apt update failed"
 
@@ -70,7 +87,7 @@ install_bot() {
     elif [[ -e "$INSTALL_DIR" ]]; then
         fail "'$INSTALL_DIR' exists but is not a Git repository. Rename or remove it first."
     else
-        git clone "$REPO_URL" "$INSTALL_DIR" || fail "Git clone failed"
+        git clone --depth 1 "$REPO_URL" "$INSTALL_DIR" || { df -h .; fail "Git clone failed. Check available disk space with: df -h"; }
     fi
 
     cd "$INSTALL_DIR" || fail "Could not enter $INSTALL_DIR"
