@@ -1,146 +1,124 @@
 #!/bin/bash
 
-# ============================================================
-#              EVILSAAD DOCKER VPS BOT INSTALLER
-# ============================================================
-
-set -e
-
-REPO_URL="https://github.com/evilsaad9918-lgtm/vps.git"
-PROJECT_DIR="vps"
-ZIP_FILE="EVILSAAD-Docker-VPS-Bot.zip"
+# ==========================================
+#       EVILSAAD DOCKER BOT INSTALLER
+# ==========================================
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
+PURPLE='\033[0;35m'
+YELLOW='\033[1;33m'
 RESET='\033[0m'
 
+REPO="https://github.com/evilsaad9918-lgtm/vps.git"
+
 banner() {
-    clear
-    echo -e "${CYAN}"
-    echo "============================================================"
-    echo "  ███████╗██╗   ██╗██╗██╗      ███████╗ █████╗  █████╗ ██████╗"
-    echo "  ██╔════╝██║   ██║██║██║      ██╔════╝██╔══██╗██╔══██╗██╔══██╗"
-    echo "  █████╗  ██║   ██║██║██║      ███████╗███████║███████║██║  ██║"
-    echo "  ██╔══╝  ╚██╗ ██╔╝██║██║      ╚════██║██╔══██║██╔══██║██║  ██║"
-    echo "  ███████╗ ╚████╔╝ ██║███████╗ ███████║██║  ██║██║  ██║██████╔╝"
-    echo "  ╚══════╝  ╚═══╝  ╚═╝╚══════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝"
-    echo "============================================================"
-    echo "                 DOCKER VPS BOT INSTALLER"
-    echo "                    MADE BY EVILSAAD"
-    echo "============================================================"
-    echo -e "${RESET}"
+clear
+
+echo -e "${PURPLE}"
+echo "███████╗██╗   ██╗██╗██╗      ███████╗ █████╗  █████╗ ██████╗"
+echo "██╔════╝██║   ██║██║██║      ██╔════╝██╔══██╗██╔══██╗██╔══██╗"
+echo "█████╗  ██║   ██║██║██║      ███████╗███████║███████║██║  ██║"
+echo "██╔══╝  ╚██╗ ██╔╝██║██║      ╚════██║██╔══██║██╔══██║██║  ██║"
+echo "███████╗ ╚████╔╝ ██║███████╗ ███████║██║  ██║██║  ██║██████╔╝"
+echo "╚══════╝  ╚═══╝  ╚═╝╚══════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝"
+echo ""
+echo "              DOCKER BOT INSTALLER"
+echo "                 MADE BY EVILSAAD"
+echo "=========================================================="
+echo -e "${RESET}"
 }
 
-step() {
-    echo
-    echo -e "${YELLOW}[$1/7] $2${RESET}"
-    echo "------------------------------------------------------------"
+pause() {
+    echo ""
+    read -p "Press ENTER to continue..."
 }
 
 install_bot() {
 
-    banner
-
     if [[ $EUID -ne 0 ]]; then
-        echo -e "${RED}Please run this installer as root.${RESET}"
+        echo -e "${RED}Please run as root!${RESET}"
         return 1
     fi
 
-    if ! command -v apt-get >/dev/null 2>&1; then
-        echo -e "${RED}Ubuntu/Debian with APT is required.${RESET}"
-        return 1
-    fi
+    echo -e "${CYAN}[1/7] Updating packages...${RESET}"
+    apt update || return 1
 
-    step 1 "Updating package lists"
-    apt-get update
+    echo -e "${CYAN}[2/7] Installing dependencies...${RESET}"
+    apt install unzip python3-pip git nano -y || return 1
 
-    step 2 "Installing required packages"
-    apt-get install -y unzip python3-pip git nano
+    echo -e "${CYAN}[3/7] Cloning repository...${RESET}"
 
-    step 3 "Downloading GitHub repository"
-
-    if [[ -d "$PROJECT_DIR/.git" ]]; then
-        echo "Repository already exists."
-    elif [[ -e "$PROJECT_DIR" ]]; then
-        echo "ERROR: $PROJECT_DIR exists but is not a Git repository."
-        return 1
+    if [[ ! -d vps ]]; then
+        git clone "$REPO" vps || return 1
     else
-        git clone "$REPO_URL" "$PROJECT_DIR"
+        echo -e "${YELLOW}Repository folder already exists.${RESET}"
     fi
 
-    step 4 "Installing Python dependencies"
+    cd vps || return 1
 
+    echo -e "${CYAN}[4/7] Installing Python modules...${RESET}"
     python3 -m pip install --break-system-packages \
-        discord \
-        dotenv \
-        PyNaCl \
-        davey
+        discord dotenv PyNaCl davey || return 1
 
-    step 5 "Extracting Docker VPS Bot"
+    echo -e "${CYAN}[5/7] Extracting Docker Bot...${RESET}"
 
-    cd "$PROJECT_DIR"
-
-    if [[ ! -f "$ZIP_FILE" ]]; then
-        echo -e "${RED}ERROR: $ZIP_FILE not found!${RESET}"
+    if [[ ! -f docker-bot.zip ]]; then
+        echo -e "${RED}docker-bot.zip not found!${RESET}"
         return 1
     fi
 
-    unzip -o "$ZIP_FILE"
+    unzip -o docker-bot.zip || return 1
 
-    step 6 "Creating environment configuration"
+    echo -e "${CYAN}[6/7] Creating ENV file...${RESET}"
 
     if [[ -f env ]]; then
-        cp -f env .env
-    elif [[ -f .env ]]; then
-        echo ".env already exists."
-    else
-        echo "ERROR: env template not found."
+        cp -n env .env
+    elif [[ ! -f .env ]]; then
+        echo -e "${RED}ENV file not found!${RESET}"
         return 1
     fi
 
-    step 7 "Configuring Discord Bot"
+    echo -e "${CYAN}[7/7] Configuring bot...${RESET}"
 
     nano .env
 
-    echo
+    echo ""
     echo -e "${GREEN}"
-    echo "============================================================"
-    echo "              INSTALLATION COMPLETED!"
-    echo "============================================================"
-    echo " Project: $PROJECT_DIR"
-    echo " Config:  .env"
-    echo "============================================================"
+    echo "================================================"
+    echo "          INSTALLATION COMPLETED!"
+    echo "================================================"
     echo -e "${RESET}"
 
-    echo "Start your bot using its appropriate Python entry-point."
-    echo "============================================================"
+    echo "Project directory: $(pwd)"
+    echo "Configuration: .env"
+    echo ""
+    echo "Bot source installation completed."
+    echo "Start command must be configured for your bot."
 }
 
-while true; do
+while true
+do
 
     banner
 
-    echo -e "${GREEN}SELECT AN OPTION:${RESET}"
-    echo
-    echo "  1) INSTALL DOCKER BOT"
-    echo
-    echo "  2) EXIT"
-    echo
-    echo "============================================================"
+    echo -e "${GREEN} [1] INSTALL DOCKER BOT ${RESET}"
+    echo -e "${RED} [2] EXIT ${RESET}"
 
-    read -rp "Select Option [1-2]: " choice
+    echo ""
+    read -p " Select Option: " option
 
-    case "$choice" in
+    case $option in
 
         1)
+            echo ""
             install_bot
-            read -rp "Press ENTER to return to menu..."
+            pause
             ;;
 
         2)
-            echo -e "${YELLOW}Exiting installer...${RESET}"
+            echo -e "${YELLOW}Thanks for using EVILSAAD installer!${RESET}"
             exit 0
             ;;
 
